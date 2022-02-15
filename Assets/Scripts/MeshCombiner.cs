@@ -14,33 +14,34 @@ public class MeshCombiner : MonoBehaviour
     private void Start()
     {
 
-        mfs = gameObject.GetComponentsInChildren<MeshFilter>();
-        DoCombine();
+        mfs = GetComponentsInChildren<MeshFilter>();
+        combineMeshs = new CombineInstance[mfs.Length];
+        CombineMesh();
+        Material mat = CombineMat();
+        gameObject.GetComponent<MeshRenderer>().sharedMaterial = mat;
     }
 
     private void CombineMesh()
     {
-        combineMeshs = new CombineInstance[mfs.Length];
+       
         for(int n = 0; n < mfs.Length; n++)
         {
             combineMeshs[n].mesh = mfs[n].sharedMesh;
             combineMeshs[n].transform = mfs[n].transform.localToWorldMatrix;
             mfs[n].gameObject.SetActive(false);
-            
         }
 
-        transform.GetComponent<MeshFilter>().mesh = new Mesh();
-        transform.GetComponent<MeshFilter>().mesh.CombineMeshes(combineMeshs, false);
-        transform.gameObject.SetActive(true);
+        Mesh mesh = new Mesh();
+        mesh.CombineMeshes(combineMeshs);
+        MeshFilter mfself = GetComponent<MeshFilter>();
+        mfself.mesh = mesh;
+        gameObject.SetActive(true);
     }
     
 
 
 
-    public void DoCombine()
-    {
-
-    }
+    
 
     private Material CombineMat()
     {
@@ -51,10 +52,13 @@ public class MeshCombiner : MonoBehaviour
         
         for(int n =0; n < mfs.Length; n++)
         {
+
+            
             MeshRenderer mr = mfs[n].GetComponent<MeshRenderer>();
             materials[n] = mr.sharedMaterial;
 
-            Texture2D tx = mr.sharedMaterial.GetTexture("_MainTex") as Texture2D;
+            
+            Texture2D tx = materials[n].GetTexture("_MainTex") as Texture2D;
             Texture2D tx2D = new Texture2D(tx.width, tx.height, TextureFormat.ARGB32, false);
             tx2D.SetPixels(tx.GetPixels(0, 0, tx.width, tx.height));
             tx2D.Apply();
@@ -74,12 +78,13 @@ public class MeshCombiner : MonoBehaviour
         {
             Rect rect = rects[n];
             Mesh mesh = mfs[n].sharedMesh;
+
             Vector2[] uvs = new Vector2[mesh.uv.Length];
 
-            for(int j = 0; j < uvs.Length; n++)
+            for(int j = 0; j < uvs.Length; j++)
             {
                 uvs[j].x = rect.x + mesh.uv[j].x * rect.width;
-                uvs[j].y = rect.x + mesh.uv[j].x * rect.width;
+                uvs[j].y = rect.x + mesh.uv[j].y * rect.height;
             }
 
             mesh.uv = uvs;
